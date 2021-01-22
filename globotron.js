@@ -30,7 +30,7 @@ function welcomeToGlobotron() {
         name: "question",
         choices: [
           "View all employees",
-          "View all employees by department",
+          "View all departments",
           "Add employee",
           "Remove employee",
           "Update employee Role",
@@ -41,10 +41,10 @@ function welcomeToGlobotron() {
     .then(({ question }) => {
       switch (question) {
         case "View all employees":
-          viewAllEmployees();
+          viewEmployees();
           break;
-        case "View all employees by department":
-          ViewEmployeesByDept();
+        case "View all departments":
+          ViewAllDepartments();
           break;
         case "Add employee":
           addEmployee();
@@ -102,16 +102,45 @@ function addEmployee() {
       );
     });
 }
+function addDepartment() {
+  ViewAllDepartments();
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        message: "What is the department name?",
+        name: "department",
+      },
+    ])
+    .then(({ department }) => {
+      connection.query(
+        `INSERT INTO department (name)
+        VALUES (?)`,
+        [department],
+        function (err, res) {
+          if (err) throw err;
+          console.log("Added new employee to the Globotron database");
+          console.table(res);
+          welcomeToGlobotron();
+        }
+      );
+    });
+}
 
-function ViewEmployeesByDept() {
+function ViewAllDepartments() {
+  connection.query(`SELECT name FROM department;`, function (err, res) {
+    if (err) throw err;
+    console.log("These are the employees of the ?Department at Globotron");
+    console.table(res);
+    welcomeToGlobotron();
+  });
+}
+function viewEmployees() {
   connection.query(
-    `SELECT employee.first_name, employee.last_name, roles.title,department.name,employee.manager_id
-    FROM employee
-    INNER JOIN roles ON employee.id = roles.id
-    INNER JOIN department ON roles.id = department.id`,
+    `SELECT first_name AS 'First Name',last_name AS 'Last Name',manager_id AS 'Manager' FROM employee`,
     function (err, res) {
       if (err) throw err;
-      console.log("These are the employees of the ?Department at Globotron");
+      console.log("These are the employees of Globotron");
       console.table(res);
       welcomeToGlobotron();
     }
@@ -130,6 +159,11 @@ function viewAllEmployees() {
       welcomeToGlobotron();
     }
   );
+}
+function removeEmployee() {
+  viewEmployees();
+  console.log("Which employee would you like to remove?");
+  exit();
 }
 
 function exit() {
