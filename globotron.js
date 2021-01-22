@@ -31,7 +31,6 @@ function welcomeToGlobotron() {
         choices: [
           "View all employees",
           "View all employees by department",
-          "View all employees by manager",
           "Add employee",
           "Remove employee",
           "Update employee Role",
@@ -46,9 +45,6 @@ function welcomeToGlobotron() {
           break;
         case "View all employees by department":
           ViewEmployeesByDept();
-          break;
-        case "View all employees by manager":
-          ViewEmployeesByManager();
           break;
         case "Add employee":
           addEmployee();
@@ -71,23 +67,42 @@ function welcomeToGlobotron() {
       }
     });
 }
+function addEmployee() {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        message: "What is the employees first name?",
+        name: "first",
+      },
+      {
+        type: "input",
+        message: "What is the employees last name?",
+        name: "last",
+      },
 
-function ViewEmployeesByManager() {
-  connection.query(
-    `SELECT employee.first_name, employee.last_name, roles.title,department.name,employee.manager_id
-    FROM employee
-    INNER JOIN roles ON employee.id = roles.id
-    INNER JOIN department ON roles.id = department.id`,
-    function (err, res) {
-      if (err) throw err;
-      console.log(
-        "These are the employees that work for ?this manager at Globotron"
+      {
+        type: "manager",
+        message: "Who is the employee's manager?",
+        name: "manager",
+      },
+    ])
+    .then(({ first, last, manager }) => {
+      connection.query(
+        `INSERT INTO employee (first_name,last_name,manager_id)
+            VALUES (?,?,?);
+           `,
+        [first, last, manager],
+        function (err, res) {
+          if (err) throw err;
+          console.log("Added new employee to the Globotron database");
+          console.table(res);
+          welcomeToGlobotron();
+        }
       );
-      console.table(res);
-      welcomeToGlobotron();
-    }
-  );
+    });
 }
+
 function ViewEmployeesByDept() {
   connection.query(
     `SELECT employee.first_name, employee.last_name, roles.title,department.name,employee.manager_id
