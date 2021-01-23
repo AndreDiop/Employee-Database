@@ -18,6 +18,7 @@ var connection = mysql.createConnection({
 connection.connect(function (err) {
   if (err) throw err;
   console.log("connected as id " + connection.threadId);
+  startArt();
   welcomeToGlobotron();
 });
 
@@ -31,17 +32,16 @@ function welcomeToGlobotron() {
         choices: [
           "View all employees",
           "View all departments",
+          "Add a department",
           "Add employee",
-          "Remove employee",
-          "Update employee Role",
-          "Update employee manager",
+          "Exit",
         ],
       },
     ])
     .then(({ question }) => {
       switch (question) {
         case "View all employees":
-          viewEmployees();
+          viewAllEmployees();
           break;
         case "View all departments":
           ViewAllDepartments();
@@ -49,24 +49,20 @@ function welcomeToGlobotron() {
         case "Add employee":
           addEmployee();
           break;
-        case "Remove employee":
-          removeEmployee();
-          break;
-        case "Update employee Role ":
-          updateEmployee();
-          break;
-        case "Update employee manager":
-          updateEmployeeManager();
+        case "Add a department":
+          addDepartment();
           break;
         case "Exit":
           exit();
           break;
         default:
-          console.log("Thanks for checking me out!");
+          console.log("Thanks for using the app!");
           exit();
       }
     });
 }
+
+//             }
 function addEmployee() {
   inquirer
     .prompt([
@@ -82,7 +78,7 @@ function addEmployee() {
       },
 
       {
-        type: "manager",
+        type: "input",
         message: "Who is the employee's manager?",
         name: "manager",
       },
@@ -90,7 +86,7 @@ function addEmployee() {
     .then(({ first, last, manager }) => {
       connection.query(
         `INSERT INTO employee (first_name,last_name,manager_id)
-            VALUES (?,?,?);
+        VALUES (?,?,?);
            `,
         [first, last, manager],
         function (err, res) {
@@ -102,13 +98,13 @@ function addEmployee() {
       );
     });
 }
+
 function addDepartment() {
-  ViewAllDepartments();
   inquirer
     .prompt([
       {
         type: "input",
-        message: "What is the department name?",
+        message: "What is the name of the department you are creating?",
         name: "department",
       },
     ])
@@ -119,7 +115,7 @@ function addDepartment() {
         [department],
         function (err, res) {
           if (err) throw err;
-          console.log("Added new employee to the Globotron database");
+          console.log("Your department has been created");
           console.table(res);
           welcomeToGlobotron();
         }
@@ -135,23 +131,15 @@ function ViewAllDepartments() {
     welcomeToGlobotron();
   });
 }
-function viewEmployees() {
-  connection.query(
-    `SELECT first_name AS 'First Name',last_name AS 'Last Name',manager_id AS 'Manager' FROM employee`,
-    function (err, res) {
-      if (err) throw err;
-      console.log("These are the employees of Globotron");
-      console.table(res);
-      welcomeToGlobotron();
-    }
-  );
-}
+
 function viewAllEmployees() {
   connection.query(
-    `SELECT employee.first_name, employee.last_name, roles.title,department.name,roles.salary,employee.manager_id
-  FROM employee
-  INNER JOIN roles ON employee.id = roles.id
-  INNER JOIN department ON roles.id = department.id`,
+    `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name AS department, role.salary, CONCAT(manager.first_name, ' ', manager.last_name) AS manager
+    FROM employee
+    LEFT JOIN employee manager on manager.id = employee.manager_id
+    INNER JOIN role ON (role.id = employee.role_id)
+    INNER JOIN department ON (department.id = role.department_id)
+    ORDER BY employee.id;`,
     function (err, res) {
       if (err) throw err;
       console.log("These are the employees of Globotron");
@@ -159,13 +147,18 @@ function viewAllEmployees() {
       welcomeToGlobotron();
     }
   );
-}
-function removeEmployee() {
-  viewEmployees();
-  console.log("Which employee would you like to remove?");
-  exit();
 }
 
 function exit() {
   connection.end();
+}
+
+function startArt() {
+  console.log(`
+    #     ___ _       _           _                   
+    #    / _ \ | ___ | |__   ___ | |_ _ __ ___  _ __  
+    #   / /_\/ |/ _ \| '_ \ / _ \| __| '__/ _ \| '_ \ 
+    #  / /_\\| | (_) | |_) | (_) | |_| | | (_) | | | |
+    #  \____/|_|\___/|_.__/ \___/ \__|_|  \___/|_| |_|
+    #                                                  `);
 }
